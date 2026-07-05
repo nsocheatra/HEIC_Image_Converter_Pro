@@ -2,9 +2,6 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
-dist/
-build/
-*.spec
 
 # Virtual environment
 venv/
@@ -24,6 +21,14 @@ Thumbs.db
 *.msi
 installer.iss
 install.ps1
+
+# Build output
+dist/
+build/
+*.spec
+
+# FFmpeg binaries
+heic_converter_pro/app/ffmpeg/
 
 # Logs
 *.log
