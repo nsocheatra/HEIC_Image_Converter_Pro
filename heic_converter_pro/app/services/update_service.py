@@ -9,9 +9,9 @@ from packaging.version import Version
 
 logger = logging.getLogger(__name__)
 
-APP_VERSION = "1.0.0"
-GITHUB_REPO = "user/heic-converter-pro"
+GITHUB_REPO = "nsocheatra/HEIC_Image_Converter_Pro"
 RELEASE_API = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+APP_VERSION = "1.0.0"
 
 
 class UpdateService:

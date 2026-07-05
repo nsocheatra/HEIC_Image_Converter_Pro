@@ -33,6 +33,13 @@ jobs:
         run: |
           python -m pytest tests/ -v
 
+      - name: Inject version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $ver = "${{ github.ref_name }}" -replace '^v', ''
+          (Get-Content heic_converter_pro/app/services/update_service.py) -replace 'APP_VERSION = ".*"', "APP_VERSION = `"$ver`"" | Set-Content heic_converter_pro/app/services/update_service.py
+
       - name: Build executable
         run: |
           pyinstaller --clean --onefile --windowed `
