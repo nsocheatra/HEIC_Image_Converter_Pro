@@ -5,9 +5,18 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+from PySide6.QtGui import QFont
+
 logger = logging.getLogger(__name__)
 
 TRANSLATIONS_DIR = Path(__file__).parent / "translations"
+
+LANGUAGE_FONTS: dict[str, str] = {
+    "en": "Segoe UI",
+    "km": "Leelawadee UI",
+    "zh": "Microsoft YaHei UI",
+    "ja": "Yu Gothic UI",
+}
 
 
 class LanguageService:
@@ -36,6 +45,16 @@ class LanguageService:
 
     def get(self, key: str, default: Optional[str] = None) -> str:
         return self._translations.get(key, default or key)
+
+    @staticmethod
+    def font_family_for_language(lang: str) -> str:
+        return LANGUAGE_FONTS.get(lang, "Segoe UI")
+
+    @staticmethod
+    def font_for_language(lang: str, size: int = 9) -> QFont:
+        font = QFont(LanguageService.font_family_for_language(lang), size)
+        font.setStyleStrategy(QFont.StyleStrategy.PreferAntialias)
+        return font
 
     def _load_translations(self, lang: str) -> bool:
         file_path = TRANSLATIONS_DIR / f"{lang}.json"
