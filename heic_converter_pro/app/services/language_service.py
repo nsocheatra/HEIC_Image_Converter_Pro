@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QFontDatabase
 
 logger = logging.getLogger(__name__)
 
@@ -13,10 +13,12 @@ TRANSLATIONS_DIR = Path(__file__).parent / "translations"
 
 LANGUAGE_FONTS: dict[str, str] = {
     "en": "Segoe UI",
-    "km": "Leelawadee UI",
+    "km": "Google Sans",
     "zh": "Microsoft YaHei UI",
     "ja": "Yu Gothic UI",
 }
+
+FONT_DIR = Path(__file__).resolve().parent.parent / "resources" / "fonts"
 
 
 class LanguageService:
@@ -47,11 +49,20 @@ class LanguageService:
         return self._translations.get(key, default or key)
 
     @staticmethod
+    def load_bundled_fonts() -> None:
+        if not FONT_DIR.exists():
+            return
+        for f in FONT_DIR.glob("*.ttf"):
+            QFontDatabase.addApplicationFont(str(f))
+            logger.info("Loaded bundled font: %s", f.name)
+
+    @staticmethod
     def font_family_for_language(lang: str) -> str:
         return LANGUAGE_FONTS.get(lang, "Segoe UI")
 
     @staticmethod
     def font_for_language(lang: str, size: int = 9) -> QFont:
+        LanguageService.load_bundled_fonts()
         font = QFont(LanguageService.font_family_for_language(lang), size)
         font.setStyleStrategy(QFont.StyleStrategy.PreferAntialias)
         return font
