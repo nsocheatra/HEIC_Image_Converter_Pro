@@ -61,6 +61,11 @@ class AboutDialog(QDialog):
         copyright_label.setStyleSheet("color: gray; font-size: 9pt;")
         layout.addWidget(copyright_label)
 
+        author_label = QLabel("Create By XiaoPang (Stra)")
+        author_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        author_label.setStyleSheet("color: #0078d4; font-size: 10pt; font-weight: bold;")
+        layout.addWidget(author_label)
+
         layout.addStretch()
 
         close_btn = QPushButton("Close")
