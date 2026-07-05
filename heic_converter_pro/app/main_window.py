@@ -6,8 +6,8 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from PySide6.QtCore import Qt, QByteArray, QSize, QTimer
-from PySide6.QtGui import QAction, QIcon, QKeySequence, QFont, QColor
+from PySide6.QtCore import Qt, QByteArray, QSize, QTimer, QPropertyAnimation, QEasingCurve
+from PySide6.QtGui import QAction, QIcon, QKeySequence, QFont, QColor, QPalette, QBrush
 from PySide6.QtWidgets import (
     QMainWindow,
     QWidget,
@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QApplication,
     QSizePolicy,
+    QGraphicsOpacityEffect,
 )
 
 from heic_converter_pro.app.config import ConfigManager
@@ -38,7 +39,6 @@ from heic_converter_pro.app.services.language_service import LanguageService
 from heic_converter_pro.app.services.preset_service import PresetService
 from heic_converter_pro.app.services.update_service import UpdateService
 from heic_converter_pro.app.services.watch_folder import WatchFolderService
-from heic_converter_pro.app.ui.widgets.drop_area import DropArea
 from heic_converter_pro.app.ui.widgets.file_list import FileListWidget
 from heic_converter_pro.app.ui.widgets.progress_panel import ProgressPanel
 from heic_converter_pro.app.ui.widgets.conversion_log import ConversionLog
@@ -58,15 +58,16 @@ QMenu { background-color: #ffffff; border: 1px solid #d0d0d0; padding: 4px; }
 QMenu::item { padding: 6px 28px 6px 20px; border-radius: 4px; }
 QMenu::item:selected { background-color: #0078d4; color: white; }
 QToolBar { background-color: #f3f3f3; border-bottom: 1px solid #e0e0e0; spacing: 4px; padding: 4px; }
-QToolButton { padding: 6px 12px; border-radius: 4px; border: 1px solid transparent; }
-QToolButton:hover { background-color: #e0e0e0; border-color: #d0d0d0; }
-QToolButton:checked { background-color: #0078d4; color: white; }
+QToolButton { padding: 6px 14px; border-radius: 6px; border: 1px solid transparent; background-color: transparent; }
+QToolButton:hover { background-color: #d0d0d0; border-color: #b0b0b0; }
+QToolButton:pressed { background-color: #b0b0b0; border-color: #909090; padding: 7px 13px 5px 15px; }
+QToolButton:checked { background-color: #0078d4; color: white; border-color: #0078d4; }
 QSplitter::handle { background-color: #e0e0e0; width: 2px; }
 QGroupBox { font-weight: bold; border: 1px solid #e0e0e0; border-radius: 6px; margin-top: 12px; padding: 16px 12px 12px 12px; }
 QGroupBox::title { subcontrol-origin: margin; left: 12px; padding: 0 6px; }
-QPushButton { padding: 6px 16px; border-radius: 4px; border: 1px solid #d0d0d0; background-color: #ffffff; }
-QPushButton:hover { background-color: #e8e8e8; border-color: #b0b0b0; }
-QPushButton:pressed { background-color: #d0d0d0; }
+QPushButton { padding: 6px 16px; border-radius: 6px; border: 1px solid #d0d0d0; background-color: #ffffff; }
+QPushButton:hover { background-color: #e0e0e0; border-color: #a0a0a0; }
+QPushButton:pressed { background-color: #c8c8c8; border-color: #808080; padding: 7px 15px 5px 17px; }
 QPushButton:disabled { color: #a0a0a0; background-color: #f0f0f0; }
 QProgressBar { border: 1px solid #d0d0d0; border-radius: 4px; text-align: center; background-color: #e8e8e8; }
 QProgressBar::chunk { background-color: #0078d4; border-radius: 3px; }
@@ -112,15 +113,16 @@ QMenu { background-color: #2d2d2d; border: 1px solid #3c3c3c; padding: 4px; }
 QMenu::item { padding: 6px 28px 6px 20px; border-radius: 4px; }
 QMenu::item:selected { background-color: #0078d4; color: white; }
 QToolBar { background-color: #2d2d2d; border-bottom: 1px solid #3c3c3c; spacing: 4px; padding: 4px; }
-QToolButton { padding: 6px 12px; border-radius: 4px; border: 1px solid transparent; color: #d4d4d4; }
+QToolButton { padding: 6px 14px; border-radius: 6px; border: 1px solid transparent; color: #d4d4d4; background-color: transparent; }
 QToolButton:hover { background-color: #3c3c3c; border-color: #555555; }
-QToolButton:checked { background-color: #0078d4; color: white; }
+QToolButton:pressed { background-color: #4a4a4a; border-color: #666666; padding: 7px 13px 5px 15px; }
+QToolButton:checked { background-color: #0078d4; color: white; border-color: #0078d4; }
 QSplitter::handle { background-color: #3c3c3c; width: 2px; }
 QGroupBox { font-weight: bold; border: 1px solid #3c3c3c; border-radius: 6px; margin-top: 12px; padding: 16px 12px 12px 12px; color: #d4d4d4; }
 QGroupBox::title { subcontrol-origin: margin; left: 12px; padding: 0 6px; }
-QPushButton { padding: 6px 16px; border-radius: 4px; border: 1px solid #3c3c3c; background-color: #333333; color: #d4d4d4; }
+QPushButton { padding: 6px 16px; border-radius: 6px; border: 1px solid #3c3c3c; background-color: #333333; color: #d4d4d4; }
 QPushButton:hover { background-color: #404040; border-color: #555555; }
-QPushButton:pressed { background-color: #505050; }
+QPushButton:pressed { background-color: #4a4a4a; border-color: #666666; padding: 7px 15px 5px 17px; }
 QPushButton:disabled { color: #555555; background-color: #2d2d2d; }
 QProgressBar { border: 1px solid #3c3c3c; border-radius: 4px; text-align: center; background-color: #333333; color: #d4d4d4; }
 QProgressBar::chunk { background-color: #0078d4; border-radius: 3px; }
@@ -212,11 +214,9 @@ class MainWindow(QMainWindow):
         left_layout.setContentsMargins(8, 8, 8, 8)
         left_layout.setSpacing(8)
 
-        self._drop_area = DropArea()
         self._file_list = FileListWidget()
         self._progress_panel = ProgressPanel()
 
-        left_layout.addWidget(self._drop_area)
         left_layout.addWidget(self._file_list)
         left_layout.addWidget(self._progress_panel)
         self._splitter.addWidget(left_panel)
@@ -240,184 +240,191 @@ class MainWindow(QMainWindow):
         menubar = self.menuBar()
 
         # --- File Menu ---
-        file_menu = menubar.addMenu(self._tr("menu.file"))
-        add_files_action = QAction(self._tr("menu.open_file"), self)
-        add_files_action.setShortcut(QKeySequence("Ctrl+O"))
-        add_files_action.triggered.connect(self._on_add_files)
-        file_menu.addAction(add_files_action)
+        self._file_menu = menubar.addMenu(self._tr("menu.file"))
+        self._add_files_action = QAction(self._tr("menu.open_file"), self)
+        self._add_files_action.setShortcut(QKeySequence("Ctrl+O"))
+        self._add_files_action.triggered.connect(self._on_add_files)
+        self._file_menu.addAction(self._add_files_action)
 
-        add_folder_action = QAction(self._tr("menu.open_folder"), self)
-        add_folder_action.setShortcut(QKeySequence("Ctrl+Shift+O"))
-        add_folder_action.triggered.connect(self._on_add_folder)
-        file_menu.addAction(add_folder_action)
+        self._add_folder_action = QAction(self._tr("menu.open_folder"), self)
+        self._add_folder_action.setShortcut(QKeySequence("Ctrl+Shift+O"))
+        self._add_folder_action.triggered.connect(self._on_add_folder)
+        self._file_menu.addAction(self._add_folder_action)
 
-        file_menu.addSeparator()
+        self._file_menu.addSeparator()
 
-        self._recent_files_menu = file_menu.addMenu(self._tr("menu.recent_files"))
+        self._recent_files_menu = self._file_menu.addMenu(self._tr("menu.recent_files"))
         self._update_recent_files_menu()
 
-        self._recent_folders_menu = file_menu.addMenu(self._tr("menu.recent_folders"))
+        self._recent_folders_menu = self._file_menu.addMenu(self._tr("menu.recent_folders"))
         self._update_recent_folders_menu()
 
-        file_menu.addSeparator()
+        self._file_menu.addSeparator()
 
-        watch_action = QAction("Watch Folder...", self)
-        watch_action.triggered.connect(self._toggle_watch_folder)
-        file_menu.addAction(watch_action)
+        self._watch_action = QAction("Watch Folder...", self)
+        self._watch_action.triggered.connect(self._toggle_watch_folder)
+        self._file_menu.addAction(self._watch_action)
 
-        file_menu.addSeparator()
+        self._file_menu.addSeparator()
 
-        clear_action = QAction(self._tr("menu.clear_queue"), self)
-        clear_action.triggered.connect(self._on_clear)
-        file_menu.addAction(clear_action)
+        self._clear_action = QAction(self._tr("menu.clear_queue"), self)
+        self._clear_action.triggered.connect(self._on_clear)
+        self._file_menu.addAction(self._clear_action)
 
-        file_menu.addSeparator()
+        self._file_menu.addSeparator()
 
-        export_log_action = QAction("Export Log as CSV...", self)
-        export_log_action.triggered.connect(self._export_history_csv)
-        file_menu.addAction(export_log_action)
+        self._export_log_action = QAction("Export Log as CSV...", self)
+        self._export_log_action.triggered.connect(self._export_history_csv)
+        self._file_menu.addAction(self._export_log_action)
 
-        file_menu.addSeparator()
+        self._file_menu.addSeparator()
 
-        exit_action = QAction(self._tr("menu.exit"), self)
-        exit_action.setShortcut(QKeySequence("Alt+F4"))
-        exit_action.triggered.connect(self.close)
-        file_menu.addAction(exit_action)
+        self._exit_action = QAction(self._tr("menu.exit"), self)
+        self._exit_action.setShortcut(QKeySequence("Alt+F4"))
+        self._exit_action.triggered.connect(self.close)
+        self._file_menu.addAction(self._exit_action)
 
         # --- Convert Menu ---
-        convert_menu = menubar.addMenu("&Convert")
+        self._convert_menu = menubar.addMenu(self._tr("menu.convert"))
 
-        self._start_action = QAction("&Start Conversion", self)
+        self._start_action = QAction(self._tr("menu.start_conversion"), self)
         self._start_action.setShortcut(QKeySequence("Ctrl+R"))
         self._start_action.triggered.connect(self._start_conversion)
-        convert_menu.addAction(self._start_action)
+        self._convert_menu.addAction(self._start_action)
 
-        self._stop_action = QAction("&Stop Conversion", self)
+        self._stop_action = QAction(self._tr("menu.stop_conversion"), self)
         self._stop_action.setShortcut(QKeySequence("Ctrl+Shift+R"))
         self._stop_action.setEnabled(False)
         self._stop_action.triggered.connect(self._stop_conversion)
-        convert_menu.addAction(self._stop_action)
+        self._convert_menu.addAction(self._stop_action)
 
-        convert_menu.addSeparator()
+        self._convert_menu.addSeparator()
 
-        retry_action = QAction("&Retry Failed", self)
-        retry_action.triggered.connect(self._retry_failed)
-        convert_menu.addAction(retry_action)
+        self._retry_action = QAction(self._tr("menu.retry_failed"), self)
+        self._retry_action.triggered.connect(self._retry_failed)
+        self._convert_menu.addAction(self._retry_action)
 
         # --- Edit Menu ---
-        edit_menu = menubar.addMenu(self._tr("menu.edit"))
-        select_all_action = QAction(self._tr("menu.select_all"), self)
-        select_all_action.setShortcut(QKeySequence("Ctrl+A"))
-        select_all_action.triggered.connect(self._select_all)
-        edit_menu.addAction(select_all_action)
+        self._edit_menu = menubar.addMenu(self._tr("menu.edit"))
+        self._select_all_action = QAction(self._tr("menu.select_all"), self)
+        self._select_all_action.setShortcut(QKeySequence("Ctrl+A"))
+        self._select_all_action.triggered.connect(self._select_all)
+        self._edit_menu.addAction(self._select_all_action)
 
-        remove_action = QAction(self._tr("menu.remove_selected"), self)
-        remove_action.setShortcut(QKeySequence("Delete"))
-        remove_action.triggered.connect(self._remove_selected)
-        edit_menu.addAction(remove_action)
+        self._remove_action = QAction(self._tr("menu.remove_selected"), self)
+        self._remove_action.setShortcut(QKeySequence("Delete"))
+        self._remove_action.triggered.connect(self._remove_selected)
+        self._edit_menu.addAction(self._remove_action)
 
         # --- View Menu ---
-        view_menu = menubar.addMenu(self._tr("menu.view"))
+        self._view_menu = menubar.addMenu(self._tr("menu.view"))
 
         self._theme_action = QAction(self._tr("menu.dark_mode"), self)
         self._theme_action.setShortcut(QKeySequence("Ctrl+T"))
         self._theme_action.triggered.connect(self._toggle_theme)
-        view_menu.addAction(self._theme_action)
+        self._view_menu.addAction(self._theme_action)
 
-        view_menu.addSeparator()
+        self._view_menu.addSeparator()
 
-        lang_menu = view_menu.addMenu(self._tr("menu.language"))
-        self._setup_language_menu(lang_menu)
+        self._lang_menu = self._view_menu.addMenu(self._tr("menu.language"))
+        self._setup_language_menu(self._lang_menu)
 
-        view_menu.addSeparator()
+        self._view_menu.addSeparator()
 
         # --- Tools Menu ---
-        tools_menu = menubar.addMenu(self._tr("menu.tools"))
+        self._tools_menu = menubar.addMenu(self._tr("menu.tools"))
 
-        batch_rename_action = QAction(self._tr("menu.batch_rename"), self)
-        batch_rename_action.triggered.connect(self._show_batch_rename)
-        tools_menu.addAction(batch_rename_action)
+        self._batch_rename_action = QAction(self._tr("menu.batch_rename"), self)
+        self._batch_rename_action.triggered.connect(self._show_batch_rename)
+        self._tools_menu.addAction(self._batch_rename_action)
 
-        tools_menu.addSeparator()
+        self._tools_menu.addSeparator()
 
-        preset_menu = tools_menu.addMenu("Presets")
-        self._setup_preset_menu(preset_menu)
+        self._preset_menu = self._tools_menu.addMenu(self._tr("menu.presets"))
+        self._setup_preset_menu(self._preset_menu)
 
-        tools_menu.addSeparator()
+        self._tools_menu.addSeparator()
 
-        settings_action = QAction(self._tr("menu.settings"), self)
-        settings_action.setShortcut(QKeySequence("Ctrl+,"))
-        settings_action.triggered.connect(self._show_settings)
-        tools_menu.addAction(settings_action)
+        self._settings_action = QAction(self._tr("menu.settings"), self)
+        self._settings_action.setShortcut(QKeySequence("Ctrl+,"))
+        self._settings_action.triggered.connect(self._show_settings)
+        self._tools_menu.addAction(self._settings_action)
 
         # --- Help Menu ---
-        help_menu = menubar.addMenu(self._tr("menu.help"))
+        self._help_menu = menubar.addMenu(self._tr("menu.help"))
 
-        update_action = QAction(self._tr("menu.check_update"), self)
-        update_action.triggered.connect(self._check_update)
-        help_menu.addAction(update_action)
+        self._update_action = QAction(self._tr("menu.check_update"), self)
+        self._update_action.triggered.connect(self._check_update)
+        self._help_menu.addAction(self._update_action)
 
-        help_menu.addSeparator()
+        self._help_menu.addSeparator()
 
-        about_action = QAction(self._tr("menu.about"), self)
-        about_action.triggered.connect(self._show_about)
-        help_menu.addAction(about_action)
+        self._about_action = QAction(self._tr("menu.about"), self)
+        self._about_action.triggered.connect(self._show_about)
+        self._help_menu.addAction(self._about_action)
 
     def _setup_toolbar(self) -> None:
-        toolbar = QToolBar("Main")
-        toolbar.setMovable(False)
-        toolbar.setIconSize(QSize(16, 16))
-        self.addToolBar(toolbar)
+        self._toolbar = QToolBar("Main")
+        self._toolbar.setMovable(False)
+        self._toolbar.setIconSize(QSize(16, 16))
+        self.addToolBar(self._toolbar)
 
-        add_files_btn = QToolButton()
-        add_files_btn.setText("+ Files")
-        add_files_btn.setToolTip("Add HEIC files (Ctrl+O)")
-        add_files_btn.clicked.connect(self._on_add_files)
-        toolbar.addWidget(add_files_btn)
+        self._toolbar_add_files_btn = QToolButton()
+        self._toolbar_add_files_btn.setText(self._tr("toolbar.add_files"))
+        self._toolbar_add_files_btn.setToolTip(self._tr("toolbar.add_files_tip"))
+        self._toolbar_add_files_btn.clicked.connect(self._on_add_files)
+        self._toolbar.addWidget(self._toolbar_add_files_btn)
 
-        add_folder_btn = QToolButton()
-        add_folder_btn.setText("+ Folder")
-        add_folder_btn.setToolTip("Add folder (Ctrl+D)")
-        add_folder_btn.clicked.connect(self._on_add_folder)
-        toolbar.addWidget(add_folder_btn)
+        self._toolbar_add_folder_btn = QToolButton()
+        self._toolbar_add_folder_btn.setText(self._tr("toolbar.add_folder"))
+        self._toolbar_add_folder_btn.setToolTip(self._tr("toolbar.add_folder_tip"))
+        self._toolbar_add_folder_btn.clicked.connect(self._on_add_folder)
+        self._toolbar.addWidget(self._toolbar_add_folder_btn)
 
-        toolbar.addSeparator()
+        self._toolbar.addSeparator()
 
         self._convert_btn = QToolButton()
-        self._convert_btn.setText("▶ Convert")
-        self._convert_btn.setToolTip("Start conversion (Ctrl+R)")
+        self._convert_btn.setText(self._tr("toolbar.convert"))
+        self._convert_btn.setToolTip(self._tr("toolbar.convert_tip"))
         self._convert_btn.clicked.connect(self._start_conversion)
-        toolbar.addWidget(self._convert_btn)
+        self._toolbar.addWidget(self._convert_btn)
 
         self._stop_btn = QToolButton()
-        self._stop_btn.setText("■ Stop")
-        self._stop_btn.setToolTip("Stop conversion (Ctrl+Shift+R)")
+        self._stop_btn.setText(self._tr("toolbar.stop"))
+        self._stop_btn.setToolTip(self._tr("toolbar.stop_tip"))
         self._stop_btn.setEnabled(False)
         self._stop_btn.clicked.connect(self._stop_conversion)
-        toolbar.addWidget(self._stop_btn)
+        self._toolbar.addWidget(self._stop_btn)
 
-        toolbar.addSeparator()
+        self._toolbar.addSeparator()
 
-        clear_btn = QToolButton()
-        clear_btn.setText("Clear")
-        clear_btn.clicked.connect(self._on_clear)
-        toolbar.addWidget(clear_btn)
+        self._toolbar_clear_btn = QToolButton()
+        self._toolbar_clear_btn.setText(self._tr("toolbar.clear"))
+        self._toolbar_clear_btn.clicked.connect(self._on_clear)
+        self._toolbar.addWidget(self._toolbar_clear_btn)
 
-        toolbar.addSeparator()
+        self._toolbar.addSeparator()
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        toolbar.addWidget(spacer)
+        self._toolbar.addWidget(spacer)
 
         theme_btn = QToolButton()
         theme_btn.setText("🌙")
         theme_btn.setToolTip("Toggle theme")
         theme_btn.clicked.connect(self._toggle_theme)
-        toolbar.addWidget(theme_btn)
+        self._toolbar.addWidget(theme_btn)
 
     def _setup_statusbar(self) -> None:
-        self._status_label = QLabel("Ready")
+        self._status_label = QLabel(self._tr("status.ready"))
         self.statusBar().addWidget(self._status_label, 1)
+
+        self._author_label = QLabel(
+            '<a href="https://github.com/nsocheatra" style="color: #0078d4; text-decoration: none;">Create By XiaoPang (Stra)</a>'
+        )
+        self._author_label.setOpenExternalLinks(True)
+        self._author_label.setStyleSheet("padding: 0 8px;")
+        self.statusBar().addPermanentWidget(self._author_label)
 
         ffmpeg_avail = MediaDetector.is_available()
         ffmpeg_status = "FFmpeg: ✓" if ffmpeg_avail else "FFmpeg: ✗"
@@ -433,7 +440,6 @@ class MainWindow(QMainWindow):
         self.statusBar().addPermanentWidget(self._file_count_label)
 
     def _connect_signals(self) -> None:
-        self._drop_area.files_dropped.connect(self._on_files_dropped)
         self._file_list.files_changed.connect(self._on_files_changed)
         self._batch_processor.progress_changed.connect(self._on_batch_progress)
         self._batch_processor.task_completed.connect(self._on_task_completed)
@@ -446,14 +452,6 @@ class MainWindow(QMainWindow):
 
         self._watch_folder.files_detected.connect(self._on_watch_files_detected)
 
-    def _on_files_dropped(self, paths: list[Path]) -> None:
-        self._file_list.add_paths(paths)
-        for p in paths:
-            if p.is_file():
-                self._add_to_recent("files", str(p))
-            elif p.is_dir():
-                self._add_to_recent("folders", str(p))
-
     def _on_watch_files_detected(self, paths: list[Path]) -> None:
         self._file_list.add_paths(paths)
         self._conversion_log.log_info(f"Watch folder detected {len(paths)} new file(s)")
@@ -461,7 +459,6 @@ class MainWindow(QMainWindow):
     def _on_files_changed(self, tasks) -> None:
         count = len(tasks)
         pending = sum(1 for t in tasks if t.status == TaskStatus.PENDING)
-        self._drop_area.set_file_count(count)
         self._file_count_label.setText(f"{count} files ({pending} pending)")
         self._progress_panel.set_idle(count)
 
@@ -644,7 +641,6 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Busy", "Cannot clear while conversion is running.")
             return
         self._file_list._clear_all()
-        self._drop_area.set_file_count(0)
         self._file_count_label.setText("0 files")
 
     def _toggle_theme(self) -> None:
@@ -654,8 +650,39 @@ class MainWindow(QMainWindow):
         else:
             self._config.get().theme = ThemeMode.DARK
         self._config.save()
+        self._animate_theme_switch()
+
+    def _animate_theme_switch(self) -> None:
+        overlay = QWidget(self)
+        overlay.setGeometry(self.rect())
+        overlay.setStyleSheet("background-color: black;")
+        overlay.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
+        overlay.raise_()
+        overlay.show()
+
+        effect = QGraphicsOpacityEffect(overlay)
+        overlay.setGraphicsEffect(effect)
+        effect.setOpacity(0.0)
+
+        fade_in = QPropertyAnimation(effect, b"opacity")
+        fade_in.setDuration(120)
+        fade_in.setStartValue(0.0)
+        fade_in.setEndValue(0.7)
+        fade_in.setEasingCurve(QEasingCurve.Type.InOutCubic)
+        fade_in.finished.connect(lambda: self._finish_theme_switch(overlay, effect))
+        fade_in.start(QPropertyAnimation.DeletionPolicy.DeleteWhenStopped)
+
+    def _finish_theme_switch(self, overlay: QWidget, effect: QGraphicsOpacityEffect) -> None:
         self._apply_theme()
         self._update_theme_action()
+
+        fade_out = QPropertyAnimation(effect, b"opacity")
+        fade_out.setDuration(200)
+        fade_out.setStartValue(0.7)
+        fade_out.setEndValue(0.0)
+        fade_out.setEasingCurve(QEasingCurve.Type.InOutCubic)
+        fade_out.finished.connect(overlay.deleteLater)
+        fade_out.start(QPropertyAnimation.DeletionPolicy.DeleteWhenStopped)
 
     def _update_theme_action(self) -> None:
         is_dark = self._config.get().theme == ThemeMode.DARK
@@ -682,9 +709,53 @@ class MainWindow(QMainWindow):
         self._language_service.set_language(code)
         self._config.get().language = code
         self._config.save()
-        QMessageBox.information(
-            self, "Language", "Language changed. Restart to apply fully."
-        )
+        self.retranslate_ui()
+        self._conversion_log.log_info(f"Language switched to {code}")
+
+    def retranslate_ui(self) -> None:
+        self._file_menu.setTitle(self._tr("menu.file"))
+        self._add_files_action.setText(self._tr("menu.open_file"))
+        self._add_folder_action.setText(self._tr("menu.open_folder"))
+        self._recent_files_menu.setTitle(self._tr("menu.recent_files"))
+        self._recent_folders_menu.setTitle(self._tr("menu.recent_folders"))
+        self._watch_action.setText(self._tr("menu.watch_folder"))
+        self._clear_action.setText(self._tr("menu.clear_queue"))
+        self._export_log_action.setText(self._tr("menu.export_csv"))
+        self._exit_action.setText(self._tr("menu.exit"))
+        self._convert_menu.setTitle(self._tr("menu.convert"))
+        self._start_action.setText(self._tr("menu.start_conversion"))
+        self._stop_action.setText(self._tr("menu.stop_conversion"))
+        self._retry_action.setText(self._tr("menu.retry_failed"))
+        self._edit_menu.setTitle(self._tr("menu.edit"))
+        self._select_all_action.setText(self._tr("menu.select_all"))
+        self._remove_action.setText(self._tr("menu.remove_selected"))
+        self._view_menu.setTitle(self._tr("menu.view"))
+        self._update_theme_action()
+        self._lang_menu.setTitle(self._tr("menu.language"))
+        self._tools_menu.setTitle(self._tr("menu.tools"))
+        self._batch_rename_action.setText(self._tr("menu.batch_rename"))
+        self._preset_menu.setTitle(self._tr("menu.presets"))
+        self._settings_action.setText(self._tr("menu.settings"))
+        self._help_menu.setTitle(self._tr("menu.help"))
+        self._update_action.setText(self._tr("menu.check_update"))
+        self._about_action.setText(self._tr("menu.about"))
+
+        self._toolbar_add_files_btn.setText(self._tr("toolbar.add_files"))
+        self._toolbar_add_files_btn.setToolTip(self._tr("toolbar.add_files_tip"))
+        self._toolbar_add_folder_btn.setText(self._tr("toolbar.add_folder"))
+        self._toolbar_add_folder_btn.setToolTip(self._tr("toolbar.add_folder_tip"))
+        self._convert_btn.setText(self._tr("toolbar.convert"))
+        self._convert_btn.setToolTip(self._tr("toolbar.convert_tip"))
+        self._stop_btn.setText(self._tr("toolbar.stop"))
+        self._stop_btn.setToolTip(self._tr("toolbar.stop_tip"))
+        self._toolbar_clear_btn.setText(self._tr("toolbar.clear"))
+
+        self._status_label.setText(self._tr("status.ready"))
+
+        self._settings_panel.retranslate()
+        self._file_list.retranslate()
+        self._progress_panel.retranslate()
+        self._conversion_log.retranslate()
 
     def _setup_preset_menu(self, menu: QMenu) -> None:
         presets = self._preset_service.presets

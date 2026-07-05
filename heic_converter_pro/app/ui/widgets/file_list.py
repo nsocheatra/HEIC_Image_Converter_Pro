@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 
 from heic_converter_pro.app.models.conversion_task import ConversionTask, TaskStatus
 from heic_converter_pro.app.services.file_service import FileService
+from heic_converter_pro.app.services.language_service import LanguageService
 
 logger = logging.getLogger(__name__)
 
@@ -32,19 +33,29 @@ class FileListWidget(QWidget):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._tasks: List[ConversionTask] = []
+        self._ls = LanguageService()
         self._setup_ui()
+
+    def retranslate(self) -> None:
+        t = self._ls.get
+        self._title.setText(t("file_list.title"))
+        self._add_btn.setText(t("file_list.add_files"))
+        self._add_folder_btn.setText(t("file_list.add_folder"))
+        self._clear_btn.setText(t("file_list.clear"))
+        self._remove_btn.setText(t("file_list.remove"))
+        self._update_count()
 
     def _setup_ui(self) -> None:
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
         header_layout = QHBoxLayout()
-        title = QLabel("Input Files")
+        self._title = QLabel("Input Files")
         title_font = QFont()
         title_font.setPointSize(11)
         title_font.setBold(True)
-        title.setFont(title_font)
-        header_layout.addWidget(title)
+        self._title.setFont(title_font)
+        header_layout.addWidget(self._title)
         header_layout.addStretch()
 
         self._count_label = QLabel("0 files")

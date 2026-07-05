@@ -61,9 +61,11 @@ class AboutDialog(QDialog):
         copyright_label.setStyleSheet("color: gray; font-size: 9pt;")
         layout.addWidget(copyright_label)
 
-        author_label = QLabel("Create By XiaoPang (Stra)")
+        author_label = QLabel(
+            '<a href="https://github.com/nsocheatra" style="color: #0078d4; font-size: 10pt; font-weight: bold; text-decoration: none;">Create By XiaoPang (Stra)</a>'
+        )
         author_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        author_label.setStyleSheet("color: #0078d4; font-size: 10pt; font-weight: bold;")
+        author_label.setOpenExternalLinks(True)
         layout.addWidget(author_label)
 
         layout.addStretch()

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPainter, QColor, QPen, QFont
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout
 
@@ -11,8 +12,11 @@ logger = logging.getLogger(__name__)
 
 
 class DropArea(QWidget):
+    files_dropped = Signal(list)
+
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
+        self.setAcceptDrops(True)
         self._setup_ui()
 
     def _setup_ui(self) -> None:
@@ -49,6 +53,20 @@ class DropArea(QWidget):
             self._count_label.setVisible(True)
         else:
             self._count_label.setVisible(False)
+
+    def dragEnterEvent(self, event) -> None:
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+
+    def dragMoveEvent(self, event) -> None:
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event) -> None:
+        paths = [Path(u.toLocalFile()) for u in event.mimeData().urls()]
+        if paths:
+            self.files_dropped.emit(paths)
+        event.acceptProposedAction()
 
     def paintEvent(self, event) -> None:
         super().paintEvent(event)

@@ -30,6 +30,7 @@ from heic_converter_pro.app.models.settings import (
     ExportFormat,
     OutputMode,
 )
+from heic_converter_pro.app.services.language_service import LanguageService
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ class SettingsPanel(QWidget):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._config = ConfigManager()
+        self._ls = LanguageService()
         self._setup_ui()
         self._load_settings()
 
@@ -78,21 +80,23 @@ class SettingsPanel(QWidget):
         outer_layout.addWidget(scroll)
 
     def _build_output_group(self) -> None:
-        group = QGroupBox("Output Format")
-        layout = QFormLayout(group)
+        self._output_group = QGroupBox("Output Format")
+        layout = QFormLayout(self._output_group)
 
         self._format_combo = QComboBox()
         for fmt in ExportFormat:
             self._format_combo.addItem(fmt.value.upper(), fmt.value)
         self._format_combo.currentIndexChanged.connect(self._on_setting_changed)
-        layout.addRow("Format:", self._format_combo)
+        self._format_label = QLabel("Format:")
+        layout.addRow(self._format_label, self._format_combo)
 
         self._output_mode_combo = QComboBox()
         self._output_mode_combo.addItem("Same as source", OutputMode.SAME_FOLDER.value)
         self._output_mode_combo.addItem("Custom folder", OutputMode.CUSTOM_FOLDER.value)
         self._output_mode_combo.addItem("Ask every time", OutputMode.ASK_EVERY.value)
         self._output_mode_combo.currentIndexChanged.connect(self._on_output_mode_changed)
-        layout.addRow("Output to:", self._output_mode_combo)
+        self._output_to_label = QLabel("Output to:")
+        layout.addRow(self._output_to_label, self._output_mode_combo)
 
         output_folder_layout = QHBoxLayout()
         self._output_folder_edit = QLineEdit()
@@ -104,17 +108,18 @@ class SettingsPanel(QWidget):
         self._browse_btn.setEnabled(False)
         self._browse_btn.clicked.connect(self._browse_output_folder)
         output_folder_layout.addWidget(self._browse_btn)
-        layout.addRow("Folder:", output_folder_layout)
+        self._folder_label = QLabel("Folder:")
+        layout.addRow(self._folder_label, output_folder_layout)
 
         self._overwrite_cb = QCheckBox("Overwrite existing files")
         self._overwrite_cb.stateChanged.connect(self._on_setting_changed)
         layout.addRow("", self._overwrite_cb)
 
-        self._main_layout.addWidget(group)
+        self._main_layout.addWidget(self._output_group)
 
     def _build_quality_group(self) -> None:
-        group = QGroupBox("Quality")
-        layout = QFormLayout(group)
+        self._quality_group = QGroupBox("Quality")
+        layout = QFormLayout(self._quality_group)
 
         jpeg_layout = QHBoxLayout()
         self._jpeg_quality_slider = QSlider(Qt.Orientation.Horizontal)
@@ -124,7 +129,8 @@ class SettingsPanel(QWidget):
         self._jpeg_quality_label = QLabel("95")
         self._jpeg_quality_label.setMinimumWidth(30)
         jpeg_layout.addWidget(self._jpeg_quality_label)
-        layout.addRow("JPEG Quality:", jpeg_layout)
+        self._jpeg_quality_title = QLabel("JPEG Quality:")
+        layout.addRow(self._jpeg_quality_title, jpeg_layout)
 
         webp_layout = QHBoxLayout()
         self._webp_quality_slider = QSlider(Qt.Orientation.Horizontal)
@@ -134,19 +140,21 @@ class SettingsPanel(QWidget):
         self._webp_quality_label = QLabel("90")
         self._webp_quality_label.setMinimumWidth(30)
         webp_layout.addWidget(self._webp_quality_label)
-        layout.addRow("WebP Quality:", webp_layout)
+        self._webp_quality_title = QLabel("WebP Quality:")
+        layout.addRow(self._webp_quality_title, webp_layout)
 
-        self._main_layout.addWidget(group)
+        self._main_layout.addWidget(self._quality_group)
 
     def _build_resize_group(self) -> None:
-        group = QGroupBox("Resize")
-        layout = QGridLayout(group)
+        self._resize_group = QGroupBox("Resize")
+        layout = QGridLayout(self._resize_group)
 
         self._resize_cb = QCheckBox("Enable resize")
         self._resize_cb.stateChanged.connect(self._on_setting_changed)
         layout.addWidget(self._resize_cb, 0, 0, 1, 2)
 
-        layout.addWidget(QLabel("Width:"), 1, 0)
+        self._width_label = QLabel("Width:")
+        layout.addWidget(self._width_label, 1, 0)
         self._resize_width_spin = QSpinBox()
         self._resize_width_spin.setRange(1, 10000)
         self._resize_width_spin.setValue(1920)
@@ -154,7 +162,8 @@ class SettingsPanel(QWidget):
         self._resize_width_spin.valueChanged.connect(self._on_setting_changed)
         layout.addWidget(self._resize_width_spin, 1, 1)
 
-        layout.addWidget(QLabel("Height:"), 2, 0)
+        self._height_label = QLabel("Height:")
+        layout.addWidget(self._height_label, 2, 0)
         self._resize_height_spin = QSpinBox()
         self._resize_height_spin.setRange(1, 10000)
         self._resize_height_spin.setValue(1080)
@@ -176,11 +185,11 @@ class SettingsPanel(QWidget):
             )
         )
 
-        self._main_layout.addWidget(group)
+        self._main_layout.addWidget(self._resize_group)
 
     def _build_transform_group(self) -> None:
-        group = QGroupBox("Transform")
-        layout = QFormLayout(group)
+        self._transform_group = QGroupBox("Transform")
+        layout = QFormLayout(self._transform_group)
 
         rotation_layout = QHBoxLayout()
         self._rotation_spin = QSpinBox()
@@ -199,7 +208,8 @@ class SettingsPanel(QWidget):
             lambda: self._rotation_spin.setValue((self._rotation_spin.value() - 90) % 360)
         )
         rotation_layout.addWidget(self._rotate_90_ccw)
-        layout.addRow("Rotation:", rotation_layout)
+        self._rotation_label = QLabel("Rotation:")
+        layout.addRow(self._rotation_label, rotation_layout)
 
         self._flip_h_cb = QCheckBox("Flip horizontally")
         self._flip_h_cb.stateChanged.connect(self._on_setting_changed)
@@ -216,7 +226,8 @@ class SettingsPanel(QWidget):
         brightness_layout.addWidget(self._brightness_slider)
         self._brightness_label = QLabel("1.0")
         brightness_layout.addWidget(self._brightness_label)
-        layout.addRow("Brightness:", brightness_layout)
+        self._brightness_title = QLabel("Brightness:")
+        layout.addRow(self._brightness_title, brightness_layout)
         self._brightness_slider.valueChanged.connect(
             lambda v: self._brightness_label.setText(f"{v/100:.1f}")
         )
@@ -229,7 +240,8 @@ class SettingsPanel(QWidget):
         contrast_layout.addWidget(self._contrast_slider)
         self._contrast_label = QLabel("1.0")
         contrast_layout.addWidget(self._contrast_label)
-        layout.addRow("Contrast:", contrast_layout)
+        self._contrast_title = QLabel("Contrast:")
+        layout.addRow(self._contrast_title, contrast_layout)
         self._contrast_slider.valueChanged.connect(
             lambda v: self._contrast_label.setText(f"{v/100:.1f}")
         )
@@ -242,7 +254,8 @@ class SettingsPanel(QWidget):
         sharpness_layout.addWidget(self._sharpness_slider)
         self._sharpness_label = QLabel("1.0")
         sharpness_layout.addWidget(self._sharpness_label)
-        layout.addRow("Sharpness:", sharpness_layout)
+        self._sharpness_title = QLabel("Sharpness:")
+        layout.addRow(self._sharpness_title, sharpness_layout)
         self._sharpness_slider.valueChanged.connect(
             lambda v: self._sharpness_label.setText(f"{v/100:.1f}")
         )
@@ -255,7 +268,8 @@ class SettingsPanel(QWidget):
         saturation_layout.addWidget(self._saturation_slider)
         self._saturation_label = QLabel("1.0")
         saturation_layout.addWidget(self._saturation_label)
-        layout.addRow("Saturation:", saturation_layout)
+        self._saturation_title = QLabel("Saturation:")
+        layout.addRow(self._saturation_title, saturation_layout)
         self._saturation_slider.valueChanged.connect(
             lambda v: self._saturation_label.setText(f"{v/100:.1f}")
         )
@@ -268,7 +282,8 @@ class SettingsPanel(QWidget):
         gamma_layout.addWidget(self._gamma_slider)
         self._gamma_label = QLabel("1.0")
         gamma_layout.addWidget(self._gamma_label)
-        layout.addRow("Gamma:", gamma_layout)
+        self._gamma_title = QLabel("Gamma:")
+        layout.addRow(self._gamma_title, gamma_layout)
         self._gamma_slider.valueChanged.connect(
             lambda v: self._gamma_label.setText(f"{v/100:.1f}")
         )
@@ -283,24 +298,28 @@ class SettingsPanel(QWidget):
         self._blur_spin.setValue(0)
         self._blur_spin.valueChanged.connect(self._on_setting_changed)
         blur_layout.addWidget(self._blur_spin)
-        blur_layout.addWidget(QLabel("px"))
-        layout.addRow("Blur:", blur_layout)
+        self._blur_px = QLabel("px")
+        blur_layout.addWidget(self._blur_px)
+        self._blur_label = QLabel("Blur:")
+        layout.addRow(self._blur_label, blur_layout)
 
-        self._main_layout.addWidget(group)
+        self._main_layout.addWidget(self._transform_group)
 
     def _build_enhance_group(self) -> None:
-        group = QGroupBox("Watermark & Border")
-        layout = QFormLayout(group)
+        self._enhance_group = QGroupBox("Watermark & Border")
+        layout = QFormLayout(self._enhance_group)
 
         self._watermark_edit = QLineEdit()
         self._watermark_edit.setPlaceholderText("Watermark text (leave empty to disable)")
         self._watermark_edit.textChanged.connect(self._on_setting_changed)
-        layout.addRow("Text:", self._watermark_edit)
+        self._watermark_text_label = QLabel("Text:")
+        layout.addRow(self._watermark_text_label, self._watermark_edit)
 
         self._watermark_pos = QComboBox()
         self._watermark_pos.addItems(["top_left", "top_right", "bottom_left", "bottom_right", "center"])
         self._watermark_pos.currentIndexChanged.connect(self._on_setting_changed)
-        layout.addRow("Position:", self._watermark_pos)
+        self._watermark_pos_label = QLabel("Position:")
+        layout.addRow(self._watermark_pos_label, self._watermark_pos)
 
         opacity_layout = QHBoxLayout()
         self._watermark_opacity = QSlider(Qt.Orientation.Horizontal)
@@ -310,7 +329,8 @@ class SettingsPanel(QWidget):
         opacity_layout.addWidget(self._watermark_opacity)
         self._watermark_opacity_label = QLabel("128")
         opacity_layout.addWidget(self._watermark_opacity_label)
-        layout.addRow("Opacity:", opacity_layout)
+        self._watermark_opacity_title = QLabel("Opacity:")
+        layout.addRow(self._watermark_opacity_title, opacity_layout)
         self._watermark_opacity.valueChanged.connect(
             lambda v: self._watermark_opacity_label.setText(str(v))
         )
@@ -322,13 +342,14 @@ class SettingsPanel(QWidget):
         self._border_spin.setSuffix(" px")
         self._border_spin.valueChanged.connect(self._on_setting_changed)
         border_layout.addWidget(self._border_spin)
-        layout.addRow("Border:", border_layout)
+        self._border_label = QLabel("Border:")
+        layout.addRow(self._border_label, border_layout)
 
-        self._main_layout.addWidget(group)
+        self._main_layout.addWidget(self._enhance_group)
 
     def _build_metadata_group(self) -> None:
-        group = QGroupBox("Metadata")
-        layout = QVBoxLayout(group)
+        self._metadata_group = QGroupBox("Metadata")
+        layout = QVBoxLayout(self._metadata_group)
 
         self._preserve_exif_cb = QCheckBox("Preserve EXIF data")
         self._preserve_exif_cb.setChecked(True)
@@ -350,26 +371,27 @@ class SettingsPanel(QWidget):
         self._preserve_orientation_cb.stateChanged.connect(self._on_setting_changed)
         layout.addWidget(self._preserve_orientation_cb)
 
-        self._main_layout.addWidget(group)
+        self._main_layout.addWidget(self._metadata_group)
 
     def _build_filename_group(self) -> None:
-        group = QGroupBox("Filename Template")
-        layout = QFormLayout(group)
+        self._filename_group = QGroupBox("Filename Template")
+        layout = QFormLayout(self._filename_group)
 
         self._template_edit = QLineEdit("{name}_converted")
         self._template_edit.setPlaceholderText("{name} and {counter} supported")
         self._template_edit.textChanged.connect(self._on_setting_changed)
-        layout.addRow("Template:", self._template_edit)
+        self._template_label = QLabel("Template:")
+        layout.addRow(self._template_label, self._template_edit)
 
-        help_label = QLabel("Use {name} for original filename, {counter} for numbering")
-        help_label.setStyleSheet("color: gray; font-size: 9pt;")
-        layout.addRow("", help_label)
+        self._template_help = QLabel("Use {name} for original filename, {counter} for numbering")
+        self._template_help.setStyleSheet("color: gray; font-size: 9pt;")
+        layout.addRow("", self._template_help)
 
-        self._main_layout.addWidget(group)
+        self._main_layout.addWidget(self._filename_group)
 
     def _build_advanced_group(self) -> None:
-        group = QGroupBox("Advanced")
-        layout = QFormLayout(group)
+        self._advanced_group = QGroupBox("Advanced")
+        layout = QFormLayout(self._advanced_group)
 
         self._threads_spin = QSpinBox()
         self._threads_spin.setRange(1, 32)
@@ -380,9 +402,54 @@ class SettingsPanel(QWidget):
         self._keep_original_cb.stateChanged.connect(self._on_setting_changed)
         layout.addRow("", self._keep_original_cb)
         self._threads_spin.valueChanged.connect(self._on_setting_changed)
-        layout.addRow("Max threads:", self._threads_spin)
+        self._max_threads_label = QLabel("Max threads:")
+        layout.addRow(self._max_threads_label, self._threads_spin)
 
-        self._main_layout.addWidget(group)
+        self._main_layout.addWidget(self._advanced_group)
+
+    def retranslate(self) -> None:
+        t = self._ls.get
+        self._output_group.setTitle(t("settings.output_format"))
+        self._format_label.setText(t("settings.format") + ":")
+        self._output_to_label.setText(t("settings.output_to") + ":")
+        self._folder_label.setText(t("settings.folder") + ":")
+        self._browse_btn.setText(t("settings.browse"))
+        self._overwrite_cb.setText(t("settings.overwrite"))
+        self._quality_group.setTitle(t("settings.quality"))
+        self._jpeg_quality_title.setText(t("settings.jpeg_quality") + ":")
+        self._webp_quality_title.setText(t("settings.webp_quality") + ":")
+        self._resize_group.setTitle(t("settings.resize"))
+        self._resize_cb.setText(t("settings.resize_enable"))
+        self._width_label.setText(t("settings.width") + ":")
+        self._height_label.setText(t("settings.height") + ":")
+        self._keep_aspect_cb.setText(t("settings.keep_aspect"))
+        self._transform_group.setTitle(t("settings.transform"))
+        self._rotation_label.setText(t("settings.rotation") + ":")
+        self._flip_h_cb.setText(t("settings.flip_h"))
+        self._flip_v_cb.setText(t("settings.flip_v"))
+        self._brightness_title.setText(t("settings.brightness") + ":")
+        self._contrast_title.setText(t("settings.contrast") + ":")
+        self._sharpness_title.setText(t("settings.sharpness") + ":")
+        self._saturation_title.setText(t("settings.saturation") + ":")
+        self._gamma_title.setText(t("settings.gamma") + ":")
+        self._auto_enhance_cb.setText(t("settings.auto_enhance"))
+        self._blur_label.setText(t("settings.blur") + ":")
+        self._enhance_group.setTitle(t("settings.watermark_border"))
+        self._watermark_text_label.setText(t("settings.watermark_text") + ":")
+        self._watermark_pos_label.setText(t("settings.watermark_pos") + ":")
+        self._watermark_opacity_title.setText(t("settings.watermark_opacity") + ":")
+        self._border_label.setText(t("settings.border") + ":")
+        self._metadata_group.setTitle(t("settings.metadata"))
+        self._preserve_exif_cb.setText(t("settings.preserve_exif"))
+        self._preserve_gps_cb.setText(t("settings.preserve_gps"))
+        self._preserve_icc_cb.setText(t("settings.preserve_icc"))
+        self._preserve_orientation_cb.setText(t("settings.preserve_orientation"))
+        self._filename_group.setTitle(t("settings.filename_template"))
+        self._template_label.setText(t("settings.template") + ":")
+        self._template_help.setText(t("settings.template_help"))
+        self._advanced_group.setTitle(t("settings.advanced"))
+        self._keep_original_cb.setText(t("settings.keep_original"))
+        self._max_threads_label.setText(t("settings.max_threads") + ":")
 
     def _load_settings(self) -> None:
         settings = self._config.get()

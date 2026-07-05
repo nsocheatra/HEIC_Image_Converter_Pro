@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from heic_converter_pro.app.models.conversion_task import ConversionTask, TaskStatus
+from heic_converter_pro.app.services.language_service import LanguageService
 
 logger = logging.getLogger(__name__)
 
@@ -26,19 +27,27 @@ logger = logging.getLogger(__name__)
 class ConversionLog(QWidget):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
+        self._ls = LanguageService()
         self._setup_ui()
+
+    def retranslate(self) -> None:
+        t = self._ls.get
+        self._title.setText(t("log.title"))
+        self._auto_scroll.setText(t("log.auto_scroll"))
+        self._clear_btn.setText(t("log.clear"))
+        self._export_btn.setText(t("log.export"))
 
     def _setup_ui(self) -> None:
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
         header_layout = QHBoxLayout()
-        title = QLabel("Conversion Log")
+        self._title = QLabel("Conversion Log")
         title_font = QFont()
         title_font.setPointSize(11)
         title_font.setBold(True)
-        title.setFont(title_font)
-        header_layout.addWidget(title)
+        self._title.setFont(title_font)
+        header_layout.addWidget(self._title)
         header_layout.addStretch()
 
         self._auto_scroll = QCheckBox("Auto-scroll")

@@ -57,7 +57,7 @@ def main() -> None:
     app = QApplication(sys.argv)
     app.setApplicationName("HEIC Image Converter Pro")
     app.setOrganizationName("HEIC Converter")
-    app.setApplicationVersion("1.0.0")
+    app.setApplicationVersion("1.4.0")
 
     app.setStyle("Fusion")
 

@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from heic_converter_pro.app.models.conversion_task import ConversionTask, TaskStatus
+from heic_converter_pro.app.services.language_service import LanguageService
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +30,21 @@ class ProgressPanel(QFrame):
         self._start_time: Optional[float] = None
         self._processed_count = 0
         self._total_count = 0
+        self._target_progress = 0.0
+        self._current_progress = 0.0
+        self._ls = LanguageService()
         self._setup_ui()
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._update_eta)
+        self._anim_timer = QTimer(self)
+        self._anim_timer.timeout.connect(self._animate_progress)
+        self._anim_timer.setInterval(16)
         self.set_idle()
+
+    def retranslate(self) -> None:
+        t = self._ls.get
+        self._cancel_btn.setText(t("progress.cancel"))
+        self._retry_btn.setText(t("progress.retry"))
 
     def _setup_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -103,6 +115,8 @@ class ProgressPanel(QFrame):
         self._start_time = time.time()
         self._processed_count = 0
         self._total_count = total
+        self._target_progress = 0.0
+        self._current_progress = 0.0
         self._progress_bar.setValue(0)
         self._progress_bar.setMaximum(total * 100)
         self._count_label.setText(f"0 / {total}")
@@ -113,16 +127,29 @@ class ProgressPanel(QFrame):
         self._timer.start(500)
 
     def update_progress(self, value: float) -> None:
-        overall = int(((self._processed_count + value) / max(self._total_count, 1)) * 100)
-        self._progress_bar.setValue(overall)
+        self._target_progress = ((self._processed_count + value) / max(self._total_count, 1)) * 100
+        if not self._anim_timer.isActive():
+            self._current_progress = float(self._progress_bar.value())
+            self._anim_timer.start()
+
+    def _animate_progress(self) -> None:
+        diff = self._target_progress - self._current_progress
+        if abs(diff) < 0.5:
+            self._current_progress = self._target_progress
+            self._anim_timer.stop()
+        else:
+            self._current_progress += diff * 0.3
+        self._progress_bar.setValue(int(self._current_progress))
 
     def set_status(self, text: str) -> None:
         self._status_label.setText(text)
 
     def on_task_completed(self, task: ConversionTask) -> None:
         self._processed_count += 1
-        progress_value = int((self._processed_count / max(self._total_count, 1)) * 100)
-        self._progress_bar.setValue(progress_value)
+        self._target_progress = (self._processed_count / max(self._total_count, 1)) * 100
+        if not self._anim_timer.isActive():
+            self._current_progress = float(self._progress_bar.value())
+            self._anim_timer.start()
         self._count_label.setText(f"{self._processed_count} / {self._total_count}")
 
         if task.status == TaskStatus.COMPLETED:
