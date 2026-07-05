@@ -27,8 +27,8 @@ dist/
 build/
 *.spec
 
-# FFmpeg binaries
-heic_converter_pro/app/ffmpeg/
+# FFmpeg binaries (too large for git - download via scripts/download_ffmpeg.ps1)
+heic_converter_pro/app/ffmpeg/*.exe
 
 # Logs
 *.log

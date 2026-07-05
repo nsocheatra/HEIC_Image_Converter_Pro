@@ -4,6 +4,7 @@ import logging
 import os
 import subprocess
 import shutil
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -11,7 +12,11 @@ logger = logging.getLogger(__name__)
 
 
 class MediaDetector:
-    FFMPEG_DIR = Path(__file__).parent.parent.parent.parent / "ffmpeg"
+    @classmethod
+    def _ffmpeg_dir(cls) -> Path:
+        if getattr(sys, "frozen", False):
+            return Path(sys.executable).parent / "ffmpeg"
+        return Path(__file__).resolve().parent.parent / "ffmpeg"
 
     @classmethod
     def find_ffmpeg(cls) -> Optional[Path]:
@@ -51,7 +56,7 @@ class MediaDetector:
     @classmethod
     def _search_paths(cls, executable: str = "ffmpeg") -> list[Path]:
         paths: list[Path] = []
-        bundled = cls.FFMPEG_DIR / f"{executable}.exe"
+        bundled = cls._ffmpeg_dir() / f"{executable}.exe"
         if bundled.exists():
             paths.append(bundled)
         system_path = shutil.which(executable)

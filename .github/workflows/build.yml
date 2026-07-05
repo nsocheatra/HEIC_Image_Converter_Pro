@@ -40,29 +40,31 @@ jobs:
           $ver = "${{ github.ref_name }}" -replace '^v', ''
           (Get-Content heic_converter_pro/app/services/update_service.py) -replace 'APP_VERSION = ".*"', "APP_VERSION = `"$ver`"" | Set-Content heic_converter_pro/app/services/update_service.py
 
+      - name: Download FFmpeg
+        shell: pwsh
+        run: |
+          curl -L -o ffmpeg-release.7z "https://github.com/GyanD/codexffmpeg/releases/download/7.1/ffmpeg-7.1-full_build.7z"
+          7z x ffmpeg-release.7z -offmpeg-temp -y | Out-Null
+          New-Item -ItemType Directory -Force -Path "heic_converter_pro/app/ffmpeg"
+          Copy-Item "ffmpeg-temp/ffmpeg-7.1-full_build/bin/ffmpeg.exe" "heic_converter_pro/app/ffmpeg/ffmpeg.exe"
+          Copy-Item "ffmpeg-temp/ffmpeg-7.1-full_build/bin/ffprobe.exe" "heic_converter_pro/app/ffmpeg/ffprobe.exe"
+          Remove-Item -Recurse -Force "ffmpeg-release.7z", "ffmpeg-temp"
+
       - name: Build executable
         run: |
-          pyinstaller --clean --onefile --windowed `
-            --name "HEIC_Image_Converter_Pro" `
-            --icon "assets/logo.ico" `
-            --add-data "assets;assets" `
-            --add-data "heic_converter_pro;heic_converter_pro" `
-            --hidden-import "uuid" `
-            --hidden-import "PIL" --hidden-import "PIL.Image" `
-            --hidden-import "PIL.ImageCms" --hidden-import "PIL.ExifTags" `
-            --hidden-import "PIL.TiffImagePlugin" --hidden-import "pillow_heif" `
-            --hidden-import "PySide6.QtCore" --hidden-import "PySide6.QtGui" `
-            --hidden-import "PySide6.QtWidgets" `
-            --collect-submodules "heic_converter_pro" `
-            --exclude "tkinter" --exclude "matplotlib" --exclude "scipy" `
-            --exclude "notebook" --exclude "jupyter" --noconfirm `
-            "heic_converter_pro/main.py"
+          pyinstaller "HEIC_Image_Converter_Pro.spec" --clean --noconfirm
 
       - name: Upload executable
         uses: actions/upload-artifact@v4
         with:
           name: HEIC_Image_Converter_Pro-${{ github.ref_name }}
           path: dist/HEIC_Image_Converter_Pro.exe
+
+      - name: Upload FFmpeg
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-${{ github.ref_name }}
+          path: heic_converter_pro/app/ffmpeg/
 
   release:
     needs: build
@@ -75,9 +77,17 @@ jobs:
         with:
           name: HEIC_Image_Converter_Pro-${{ github.ref_name }}
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: ffmpeg-${{ github.ref_name }}
+          path: ffmpeg
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: HEIC_Image_Converter_Pro.exe
+          files: |
+            HEIC_Image_Converter_Pro.exe
+            ffmpeg/ffmpeg.exe
+            ffmpeg/ffprobe.exe
           generate_release_notes: true
           fail_on_unmatched_files: false
