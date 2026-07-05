@@ -52,7 +52,21 @@ jobs:
 
       - name: Build executable
         run: |
-          pyinstaller "HEIC_Image_Converter_Pro.spec" --clean --noconfirm
+          pyinstaller --clean --onefile --windowed `
+            --name "HEIC_Image_Converter_Pro" `
+            --icon "assets/logo.ico" `
+            --add-data "assets;assets" `
+            --add-data "heic_converter_pro;heic_converter_pro" `
+            --hidden-import "uuid" `
+            --hidden-import "PIL" --hidden-import "PIL.Image" `
+            --hidden-import "PIL.ImageCms" --hidden-import "PIL.ExifTags" `
+            --hidden-import "PIL.TiffImagePlugin" --hidden-import "pillow_heif" `
+            --hidden-import "PySide6.QtCore" --hidden-import "PySide6.QtGui" `
+            --hidden-import "PySide6.QtWidgets" `
+            --collect-submodules "heic_converter_pro" `
+            --exclude "tkinter" --exclude "matplotlib" --exclude "scipy" `
+            --exclude "notebook" --exclude "jupyter" --noconfirm `
+            "heic_converter_pro/main.py"
 
       - name: Upload executable
         uses: actions/upload-artifact@v4
