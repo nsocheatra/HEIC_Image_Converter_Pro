@@ -71,6 +71,9 @@ class SettingsDialog(QDialog):
 
         self._language_combo = QComboBox()
         self._language_combo.addItem("English", "en")
+        self._language_combo.addItem("Khmer", "km")
+        self._language_combo.addItem("中文", "zh")
+        self._language_combo.addItem("日本語", "ja")
         form.addRow("Language:", self._language_combo)
         layout.addWidget(group)
 

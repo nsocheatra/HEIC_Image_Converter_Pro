@@ -1,6 +1,6 @@
 {
   "app.name": "HEIC 图片转换器 Pro",
-  "app.version": "1.0.0",
+  "app.version": "1.1.0",
   "menu.file": "文件(&F)",
   "menu.open_file": "打开文件...",
   "menu.open_folder": "打开文件夹...",

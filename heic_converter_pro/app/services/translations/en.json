@@ -1,6 +1,6 @@
 {
   "app.name": "HEIC Image Converter Pro",
-  "app.version": "1.0.0",
+  "app.version": "1.1.0",
   "menu.file": "&File",
   "menu.open_file": "&Open File...",
   "menu.open_folder": "Open Fol&der...",
