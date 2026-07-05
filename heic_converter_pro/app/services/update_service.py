@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 GITHUB_REPO = "nsocheatra/HEIC_Image_Converter_Pro"
 RELEASE_API = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.0"
 
 
 class UpdateService:

@@ -34,24 +34,24 @@ class HeicConverter:
         task.status = TaskStatus.PROCESSING
         try:
             task.original_size = FileService.get_file_size(task.source_path)
-            self._report(progress_callback, 0.05)
+            self._report(progress_callback, 0.0)
 
             image = self._open_image(task.source_path)
-            self._report(progress_callback, 0.25)
+            self._report(progress_callback, 0.20)
 
             if self._settings.preserve_orientation:
                 image = self._image_processor.apply_exif_orientation(image)
-            self._report(progress_callback, 0.35)
+            self._report(progress_callback, 0.25)
 
             image = self._apply_transformations(image)
-            self._report(progress_callback, 0.55)
+            self._report(progress_callback, 0.50)
 
             image = self._metadata_handler.preserve_all(
                 image, image,
                 preserve_exif=self._settings.preserve_exif,
                 preserve_icc=self._settings.preserve_icc,
             )
-            self._report(progress_callback, 0.75)
+            self._report(progress_callback, 0.60)
 
             output_path = FileService.generate_output_path(
                 source=task.source_path,
@@ -61,12 +61,13 @@ class HeicConverter:
                 overwrite=self._settings.overwrite_existing,
             )
             task.output_path = output_path
+            self._report(progress_callback, 0.65)
 
             ExportService.save(
                 image, output_path, self._settings.export_format,
                 quality=self._get_quality(),
             )
-            self._report(progress_callback, 0.95)
+            self._report(progress_callback, 0.90)
 
             if not output_path.exists():
                 self._ffmpeg_fallback(task, progress_callback)

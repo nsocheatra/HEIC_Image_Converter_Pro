@@ -1,24 +1,19 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
-from typing import Callable, List, Optional
+from typing import Optional
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QDragEnterEvent, QDropEvent, QPainter, QColor, QPen, QFont
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QPainter, QColor, QPen, QFont
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout
 
 logger = logging.getLogger(__name__)
 
 
 class DropArea(QWidget):
-    files_dropped = Signal(list)
-
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self._drag_over = False
         self._setup_ui()
-        self.setAcceptDrops(True)
 
     def _setup_ui(self) -> None:
         self.setMinimumHeight(200)
@@ -31,10 +26,7 @@ class DropArea(QWidget):
         icon_font.setPointSize(48)
         self._icon_label.setFont(icon_font)
 
-        self._text_label = QLabel(
-            "Drag & Drop HEIC/HEIF files or folders here\n"
-            "or click 'Add Files' to browse"
-        )
+        self._text_label = QLabel("Add HEIC/HEIF files using 'Add Files' button")
         self._text_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._text_label.setWordWrap(True)
         text_font = QFont()
@@ -58,39 +50,13 @@ class DropArea(QWidget):
         else:
             self._count_label.setVisible(False)
 
-    def dragEnterEvent(self, event: QDragEnterEvent) -> None:
-        if event.mimeData().hasUrls():
-            self._drag_over = True
-            event.acceptProposedAction()
-            self.update()
-
-    def dragLeaveEvent(self, event) -> None:
-        self._drag_over = False
-        self.update()
-
-    def dropEvent(self, event: QDropEvent) -> None:
-        self._drag_over = False
-        self.update()
-        urls = event.mimeData().urls()
-        paths = [Path(url.toLocalFile()) for url in urls if url.isLocalFile()]
-        if paths:
-            self.files_dropped.emit(paths)
-            logger.info("Dropped %d paths", len(paths))
-
     def paintEvent(self, event) -> None:
         super().paintEvent(event)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        if self._drag_over:
-            color = QColor(0, 120, 212, 60)
-            border_color = QColor(0, 120, 212)
-        else:
-            color = QColor(0, 0, 0, 20)
-            border_color = QColor(0, 0, 0, 60)
-
-        painter.setBrush(color)
-        pen = QPen(border_color, 2, Qt.PenStyle.DashLine)
+        painter.setBrush(QColor(0, 0, 0, 20))
+        pen = QPen(QColor(0, 0, 0, 60), 2, Qt.PenStyle.DashLine)
         painter.setPen(pen)
         rect = self.rect().adjusted(4, 4, -4, -4)
         painter.drawRoundedRect(rect, 12, 12)

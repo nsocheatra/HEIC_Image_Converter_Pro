@@ -13,10 +13,21 @@ logger = logging.getLogger(__name__)
 
 class MediaDetector:
     @classmethod
-    def _ffmpeg_dir(cls) -> Path:
-        if getattr(sys, "frozen", False):
-            return Path(sys.executable).parent / "ffmpeg"
-        return Path(__file__).resolve().parent.parent / "ffmpeg"
+    def _bundled_paths(cls, executable: str = "ffmpeg") -> list[Path]:
+        paths: list[Path] = []
+        name = f"{executable}.exe"
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            internal = Path(sys._MEIPASS) / "heic_converter_pro" / "app" / "ffmpeg" / name
+            if internal.exists():
+                paths.append(internal)
+            sidecar = Path(sys.executable).parent / "ffmpeg" / name
+            if sidecar.exists():
+                paths.append(sidecar)
+        else:
+            dev = Path(__file__).resolve().parent.parent / "ffmpeg" / name
+            if dev.exists():
+                paths.append(dev)
+        return paths
 
     @classmethod
     def find_ffmpeg(cls) -> Optional[Path]:
@@ -56,9 +67,7 @@ class MediaDetector:
     @classmethod
     def _search_paths(cls, executable: str = "ffmpeg") -> list[Path]:
         paths: list[Path] = []
-        bundled = cls._ffmpeg_dir() / f"{executable}.exe"
-        if bundled.exists():
-            paths.append(bundled)
+        paths.extend(cls._bundled_paths(executable))
         system_path = shutil.which(executable)
         if system_path:
             paths.append(Path(system_path))

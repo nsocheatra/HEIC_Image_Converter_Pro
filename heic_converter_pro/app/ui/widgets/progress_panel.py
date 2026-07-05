@@ -7,7 +7,6 @@ from typing import Optional
 from PySide6.QtCore import Qt, Signal, QTimer
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
-    QWidget,
     QVBoxLayout,
     QHBoxLayout,
     QProgressBar,
@@ -33,7 +32,7 @@ class ProgressPanel(QFrame):
         self._setup_ui()
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._update_eta)
-        self.setVisible(False)
+        self.set_idle()
 
     def _setup_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -84,6 +83,22 @@ class ProgressPanel(QFrame):
 
         layout.addLayout(btn_layout)
 
+    def set_idle(self, file_count: int = 0) -> None:
+        self._timer.stop()
+        self._progress_bar.setValue(0)
+        self._progress_bar.setMaximum(100)
+        self._processed_count = 0
+        self._total_count = 0
+        self._start_time = None
+        if file_count > 0:
+            self._count_label.setText(f"{file_count} file(s) loaded")
+            self._status_label.setText("Ready to convert")
+        else:
+            self._count_label.setText("0 files")
+            self._status_label.setText("Ready")
+        self._eta_label.setText("")
+        self.setVisible(True)
+
     def start_batch(self, total: int) -> None:
         self._start_time = time.time()
         self._processed_count = 0
@@ -92,8 +107,17 @@ class ProgressPanel(QFrame):
         self._progress_bar.setMaximum(total * 100)
         self._count_label.setText(f"0 / {total}")
         self._status_label.setText("Starting conversion...")
+        self._cancel_btn.setEnabled(True)
+        self._retry_btn.setEnabled(False)
         self.setVisible(True)
         self._timer.start(500)
+
+    def update_progress(self, value: float) -> None:
+        overall = int(((self._processed_count + value) / max(self._total_count, 1)) * 100)
+        self._progress_bar.setValue(overall)
+
+    def set_status(self, text: str) -> None:
+        self._status_label.setText(text)
 
     def on_task_completed(self, task: ConversionTask) -> None:
         self._processed_count += 1
@@ -126,6 +150,8 @@ class ProgressPanel(QFrame):
         self._progress_bar.setValue(100)
         self._status_label.setText("Batch completed!")
         self._eta_label.setText("Done")
+        self._cancel_btn.setEnabled(False)
+        self._retry_btn.setEnabled(True)
 
     def reset(self) -> None:
         self._timer.stop()
@@ -133,7 +159,7 @@ class ProgressPanel(QFrame):
         self._status_label.setText("Ready")
         self._eta_label.setText("")
         self._count_label.setText("0 / 0")
-        self.setVisible(False)
+        self.setVisible(True)
 
     @staticmethod
     def _format_eta(seconds: float) -> str:

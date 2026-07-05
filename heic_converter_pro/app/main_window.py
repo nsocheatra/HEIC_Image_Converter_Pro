@@ -463,6 +463,7 @@ class MainWindow(QMainWindow):
         pending = sum(1 for t in tasks if t.status == TaskStatus.PENDING)
         self._drop_area.set_file_count(count)
         self._file_count_label.setText(f"{count} files ({pending} pending)")
+        self._progress_panel.set_idle(count)
 
     def _add_to_recent(self, which: str, path: str) -> None:
         if which == "files":
@@ -544,9 +545,11 @@ class MainWindow(QMainWindow):
             self._conversion_log.log_info("No failed tasks to retry")
 
     def _on_batch_progress(self, task_id: str, progress: float) -> None:
+        self._progress_panel.update_progress(progress)
         for task in self._file_list.get_all_tasks():
             if task.task_id == task_id:
                 task.progress = progress
+                self._progress_panel.set_status(f"Processing: {task.filename}")
                 break
 
     def _on_task_completed(self, task: ConversionTask) -> None:
