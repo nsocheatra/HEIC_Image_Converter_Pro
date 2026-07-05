@@ -76,5 +76,4 @@ jobs:
         with:
           files: HEIC_Image_Converter_Pro.exe
           generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_unmatched_files: false
