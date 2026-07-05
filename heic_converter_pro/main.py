@@ -6,12 +6,18 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QApplication, QSplashScreen
-from PySide6.QtGui import QFont, QPixmap, QPainter, QColor, QPen, QFontMetrics
+from PySide6.QtGui import QFont, QPixmap, QPainter, QColor, QPen, QFontMetrics, QIcon
 
 from heic_converter_pro.app.config import ConfigManager
 from heic_converter_pro.app.logger import setup_logging
 from heic_converter_pro.app.main_window import MainWindow
 from heic_converter_pro.app.services.language_service import LanguageService
+
+
+def _asset_path(name: str) -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS) / name
+    return Path(__file__).resolve().parent.parent / name
 
 
 def _create_splash() -> QSplashScreen:
@@ -54,6 +60,10 @@ def main() -> None:
     app.setApplicationVersion("1.0.0")
 
     app.setStyle("Fusion")
+
+    icon_path = _asset_path("assets/logo.ico")
+    if icon_path.exists():
+        app.setWindowIcon(QIcon(str(icon_path)))
 
     config = ConfigManager()
     lang = config.get().language

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -175,6 +176,10 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(1200, 750)
         self.resize(1400, 850)
 
+        icon_path = self._asset_path("assets/logo.ico")
+        if icon_path.exists():
+            self.setWindowIcon(QIcon(str(icon_path)))
+
         self._setup_ui()
         self._setup_menu()
         self._setup_toolbar()
@@ -185,6 +190,12 @@ class MainWindow(QMainWindow):
         self._update_theme_action()
 
         logger.info("MainWindow initialized")
+
+    @staticmethod
+    def _asset_path(name: str) -> Path:
+        if getattr(sys, "frozen", False):
+            return Path(sys._MEIPASS) / name
+        return Path(__file__).resolve().parent.parent.parent / name
 
     def _setup_ui(self) -> None:
         central = QWidget()
